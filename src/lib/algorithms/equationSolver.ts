@@ -3,10 +3,10 @@ import { Exception } from "sass"
 const OPERATOR_PRECEDENCE:  { [key: string]: number } =
     { "+":1, "-":1, "*":2, "/":2, "^":3 }
 
-const LR = "left to right"
-const RL = "right to left"
+const LTR = "left to right"
+const RTL = "right to left"
 const OPERATOR_ASSOCIATION:  { [key: string]: string } = 
-    { "+": LR, "-":LR, "*":LR, "/":LR, "^":RL}
+    { "+": LTR, "-":LTR, "*":LTR, "/":LTR, "^":RTL}
 
 
 
@@ -44,9 +44,22 @@ export const parseInfixToPostfix = (expression:string) => {
 
                  while ( operatorStack.length > 0 
                     && operatorStack[operatorStack.length-1] != '(' 
-                    && precedenceOf(token) <= precedenceOf(operatorStack[operatorStack.length-1])) {
-                       const op = operatorStack.pop() as string
-                        postfixQueue.push(op)
+                    && precedenceOf(token) <= precedenceOf(operatorStack[operatorStack.length-1]) 
+                    
+                    ) {
+                       
+                        if(getAssociation(token) == LTR ) {
+                            const op = operatorStack.pop() as string
+                            postfixQueue.push(op)
+                            while(operatorStack.length && getAssociation(operatorStack[operatorStack.length-1])==RTL) {
+                                const op1 = operatorStack.pop() as string
+                                postfixQueue.push(op1)
+                            }
+                        } else {
+                            break;
+                        }
+                       
+
                     }
                 operatorStack.push(token)
  
@@ -54,7 +67,7 @@ export const parseInfixToPostfix = (expression:string) => {
                 operatorStack.push(token)
                
             } else {  // )
-                while (operatorStack[operatorStack.length-1] != '(' ) {
+                while (operatorStack.length && operatorStack[operatorStack.length-1] != '(' ) {
                     const op = operatorStack.pop() as string
                     postfixQueue.push(op)
                 }
@@ -118,12 +131,16 @@ const executeOperation = (operator:string, operand1:string, operand2:string) => 
         return Number(operand1) * Number(operand2)
     else if (operator == "/")
         return Number(operand1) / Number(operand2)
+    else if (operator == "^")  // since its association is from right to left
+        return Number(operand1) ** Number(operand2)
     else
         console.error("Invalid Operator!")
         return 0
 }
 
-
+const getAssociation = (operator:string) => {
+    return OPERATOR_ASSOCIATION[operator] || LTR   
+}
 
 const precedenceOf = (operator:string) => {
     return OPERATOR_PRECEDENCE[operator] || 0   
